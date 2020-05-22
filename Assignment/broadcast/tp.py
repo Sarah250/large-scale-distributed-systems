@@ -129,7 +129,7 @@ node = Node(2, 10)
 print(node.receiveMsg(node2.vector))
 '''
 
-x = ExtremePropagation(10)
+x = ExtremePropagation(2)
 x.run()
 x.sendMsgs()
 
