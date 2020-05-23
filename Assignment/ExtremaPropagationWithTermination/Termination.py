@@ -49,7 +49,7 @@ class Termination:
             # self.x[i] = min(min(self.x), min(messages[i]))
 
         # If there Oldx isn't different than X then nonews = 0
-        if oldx != self.x:
+        if (oldx != self.x).all():
             print("OldX = X, there are no news")
             self.nonews = 0
         # Else there is new news
