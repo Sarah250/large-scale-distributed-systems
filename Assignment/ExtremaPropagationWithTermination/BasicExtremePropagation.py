@@ -25,21 +25,31 @@ class BasicExtremePropagation:
 
     def run(self):
         round = 0
+        numberLost = 0
+        numberOfMessages = 0
         while True:
             for i in range(0, len(self.nodes)):
                 # send x to every neighbor
                 for j in self.nodes[i].neighbors:
                     # send to node j vectorX and receiving new vectorX from j
                     msgX = self.nodes[j].receiveMsg(self.nodes[i].vectorX)
-                    # add N  of node j to list
-                    self.listN[j] = self.nodes[j].N
-                    # calculating and updating vectorX in node i
-                    self.nodes[i].pontwiseMinimum(msgX)
-                    # add N  of node i to list
-                    self.listN[j] = self.nodes[i].N
+                    numberOfMessages += 1
+                    # random number for ms
+                    tuple = (msgX, random.rand())
+                    if tuple[1] >= 0.9:
+                        # add N  of node j to list
+                        self.listN[j] = self.nodes[j].N
+                        # calculating and updating vectorX in node i
+                        self.nodes[i].pontwiseMinimum(msgX)
+                        # add N  of node i to list
+                        self.listN[j] = self.nodes[i].N
+                    else :
+                        print("Message Lost")
+                        numberLost += 1
             i = 0
             round += 1
             print(f'Round {round} = {self.listN}')
+            print(f'Number of messages lost = {numberLost}; Number of Messages {numberOfMessages}')
 
 
 class Node:
