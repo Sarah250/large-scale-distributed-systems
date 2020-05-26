@@ -1,6 +1,6 @@
 from numpy import random
 import numpy as np
-from ExtremaPropagationWithTermination.connected import randomGraph
+from connected import randomGraph
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -57,14 +57,15 @@ class BasicExtremePropagation:
         print(f"Estimated value = {N}")'''
 
     def timer(self):
-        self.s.start()
         self.s.add_job(
             func=self.queueing,
-            trigger=IntervalTrigger(seconds=10),
+            trigger=IntervalTrigger(seconds=1),
             id='printing_time_job',
             name='Print time every 30 seconds',
             replace_existing=True
         )
+        self.s.start()
+
         # Shut down the scheduler when exiting the app
         atexit.register(lambda: self.s.shutdown())
 
@@ -108,7 +109,8 @@ class BasicExtremePropagation:
         self.timer()
         r = 0
         while True:
-            print()
+            pass
+            # print()
         '''while len(self.queue) > 0:
             # 1. Minimum distances Nodes ((src, dst), time)
             result = sorted(self.queue, key=lambda x: x[2])

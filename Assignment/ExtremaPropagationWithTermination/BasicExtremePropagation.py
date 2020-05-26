@@ -1,6 +1,6 @@
 from numpy import random
 import numpy as np
-from ExtremaPropagationWithTermination.connected import randomGraph
+from connected import randomGraph
 import networkx as nx
 import matplotlib.pyplot as plt
 
