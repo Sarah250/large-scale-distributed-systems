@@ -1,47 +1,9 @@
 from numpy import random
 import numpy as np
 from ExtremaPropagationWithTermination.connected import randomGraph
-import networkx as nx
-import matplotlib.pyplot as plt
-import operator
-
-class Sim:
-
-    def __init__(self, nodes, distances):
-        self.nodes = nodes
-        self.distances = distances
-        self.currentTime = 0
-        self.pending = []
-        self.graph = randomGraph(nodes)
-
-    def start(self, initial_msg):
-        # schedule first event
-        for i in self.nodes:
-            event = (self.nodes[i], (None, i, initial_msg))
-            self.pending.append(event)
-
-        # run the simulation loop
-        self.run_loop()
-
-    def run_loop(self):
-        while len(self.pending) > 0 and len(self.distances) > 0:
-            # Self pending is the events (0, 1...)
-            # Minimum distances Nodes (src, dst)
-            minimumTiming = min(self.distances, key=self.distances.get)
-            # Distance is timer
-            timer = self.distances.get(minimumTiming)
-
-            ton = self.pending[minimumTiming[0]]
-            tuple = ton[1]
-            msg = tuple[2]
-
-            # handle message
-            ton[0].handle(minimumTiming[0], msg, timer)
-
-            self.distances.pop(minimumTiming)
-            self.pending.pop(minimumTiming[0])
-
-
+import atexit
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 
 def calculatingN(vectorX):
@@ -62,47 +24,49 @@ class BasicExtremePropagation:
         self.percentage = percentage
         self.dist = {}
         self.queue = []
-        # incrementa com o envio
         self.time = 0
-
+        self.s = BackgroundScheduler()
 
     def initialize(self):
         for i in self.nodes:
             # init Nodes
-            self.nodes[i] = Node(self.K, self.T, list(self.graph.neighbors(i)), i)
+            self.nodes[i] = Node(self.K, self.T, list(self.graph.neighbors(i)), i, self.graph)
             self.listN.append(self.nodes[i].N)
             self.converged.append(self.nodes[i].converged)
-            #dists
-            for j in self.nodes[i].neighbors:
-                # random tempo
-                time = random.randint(0,self.numberOfNodes)
-                #inserir
-                self.dist[(i,j)] = time
+
+            if i == 0:
+                event = (self.nodes[i], self.nodes[i].vectorX, 0)
+                self.queue.append(event)
 
 
-    def start(self):
-        current = 0
-        # 1. nodo i envia para todos os seus vizinhos
-        # 2. o vizinho responde so ao nodo i OU o vizinho envia para todos os seus vizinhos
-        for i in range(0, len(self.nodes)):
-            #Nodo i envia mensagem para todos os seus vizinhos
             for j in self.nodes[i].neighbors:
-                # 1.Nodo i envia msg para j
-                timeValueIJ = self.dist[(i, j)]
-                current += timeValueIJ
-                self.queue.append((i, j, current))
-            # Vizinhos respondem ao nodo i
-            for j in self.nodes[i].neighbors:
-                # j responde a i
-                timeValueJI = self.dist[(j,i)]
-                current += timeValueJI
-                self.queue.append((j, i, current))
-            # Nodo i envia mensagem aos vizinhos
-            for j in self.nodes[i].neighbors:
-                # 1.Nodo i envia msg para j
-                timeValueIJ = self.dist[(i, j)]
-                current += timeValueIJ
+                time = random.randint(1, self.numberOfNodes)
+                # inserir
+                self.dist[(i, j)] = time
 
+    def queueing(self):
+        print("Calculating")
+        '''flag = True
+        i = 0
+        N = 0
+
+        while i < len(self.nodes) and flag:
+            if self.nodes[i].converged:
+                N = self.nodes[i].estimating()
+                flag = False
+        print(f"Estimated value = {N}")'''
+
+    def timer(self):
+        self.s.start()
+        self.s.add_job(
+            func=self.queueing,
+            trigger=IntervalTrigger(seconds=10),
+            id='printing_time_job',
+            name='Print time every 30 seconds',
+            replace_existing=True
+        )
+        # Shut down the scheduler when exiting the app
+        atexit.register(lambda: self.s.shutdown())
 
     def run(self):
         round = 0
@@ -130,7 +94,7 @@ class BasicExtremePropagation:
                         self.listN[j] = self.nodes[i].N
                         if self.converged[i] is False and self.nodes[i].converged:
                             self.converged[i] = self.nodes[i].converged
-                            numberOfTrues+=1
+                            numberOfTrues += 1
                             print(f'{self.nodes[i].converged} -> {numberOfTrues}')
                     else:
                         numberLost += 1
@@ -141,17 +105,100 @@ class BasicExtremePropagation:
         print(f'Number of messages lost = {numberLost}; Number of Messages {numberOfMessages}')
 
     def run_loop(self):
-        while len(self.queue) > 0:
-            # Minimum distances Nodes ((src, dst), time)
-            minimumTiming = sorted(bPropagation.dist.items(), key=lambda x: x[1], reverse=False)
-            # handle Nodo i -> j
+        self.timer()
+        r = 0
+        while True:
+            print()
+        '''while len(self.queue) > 0:
+            # 1. Minimum distances Nodes ((src, dst), time)
+            result = sorted(self.queue, key=lambda x: x[2])
+            node = result[0][0]
+            senderNode = node.myNumber
+            # fannout?
+            numberOfneighbors = len(node.neighbors)
+            time = result[0][2]
+            msg = result[0][1]
+            del result[0]
+            self.queue = result
+
+            # 2. envia para todos
+            listMsgs = node.handleMsg_1(msg)
+
+            for i in listMsgs:
+                self.queue.append((self.nodes[i[0]], i[1], self.dist[(senderNode, i[0])]))
+
+
+            # 3. vizinhos recebem a mensagem e enviam resposta
+            k = 0
+            listMsgs2 = []
+            while k < numberOfneighbors:
+                result = sorted(self.queue, key=lambda x: x[2])
+                node = result[0][0]
+                # fannout?
+                time = result[0][2]
+                msg = result[0][1]
+                del result[0]
+                self.queue = result
+
+                msgReceived = node.handleMsg_2(msg, senderNode)
+                listMsgs2.append(msgReceived)
+                k +=1
+
+            for y in listMsgs2:
+                self.queue.append((self.nodes[y[0]], y[1], self.dist[(y[2], y[0])]))
+
+
+            # 4. node recebe mensagens dos vizinhos e calcula pontwise:
+            k = 0
+            while k < numberOfneighbors:
+                result = sorted(self.queue, key=lambda x: x[2])
+                node = result[0][0]
+                # fannout?
+                time = result[0][2]
+                msg = result[0][1]
+                del result[0]
+                self.queue = result
+
+                self.nodes[senderNode].pontwise(msg)
+                k += 1
+
+
+            #5. envia resposta para os vizinhos
+            listMsgs = self.nodes[senderNode].handleMsg_3()
+
+            for i in listMsgs:
+                self.queue.append((self.nodes[i[0]], i[1], self.dist[(senderNode, i[0])]))
+                print("")
+
+            # Vizinhos recebem o resultado
+            k = 0
+            while k < numberOfneighbors:
+                result = sorted(self.queue, key=lambda x: x[2])
+                node = result[0][0]
+                # fannout?
+                time = result[0][2]
+                msg = result[0][1]
+                del result[0]
+                self.queue = result
+                node.pontwise(msg)
+                k+=1
+
+            r += 1
+            if r == self.numberOfNodes:
+                r = 0
+            event = (self.nodes[r], self.nodes[r].vectorX, 0)
+            self.queue.append(event)
+        '''
+
+
+
 
 
 
 
 class Node:
 
-    def __init__(self, K, T, neighbors, myNumber):
+    def __init__(self, K, T, neighbors, myNumber, graph):
         self.T = T
         self.vectorX = random.exponential(scale=1, size=K)
         self.neighbors = neighbors
@@ -160,38 +207,68 @@ class Node:
         self.nonews = 0
         self.converged = False
         self.myNumber = myNumber
+        self.graph = graph
 
-    def receiveMsg(self, msgX, nodeSource):
+    # enviar para os viznhos
+    def handleMsg_1(self, msgX):
+
+        listMsgs = []
         # oldX <- vectorX
         self.oldX = self.vectorX
         # calculate and update vectorX with the pontwiseMinimum
         self.vectorX = np.minimum(self.vectorX, msgX)
-        # calculating N(x)
-        self.N = calculatingN(self.vectorX)
 
+        for j in self.neighbors:
+            listMsgs.append((j, self.vectorX))
+
+        return listMsgs
+
+    def handleMsg_2(self, msgX, src):
+        # oldX <- vectorX
+        self.oldX = self.vectorX
+        # calculate and update vectorX with the pontwiseMinimum
+        self.vectorX = np.minimum(self.vectorX, msgX)
+
+        return (src,self.vectorX, self.myNumber)
+
+    # recebe dos vizinhos as mensagens
+    def handleMsg_3(self):
+        listMsgs = []
         if (self.oldX != self.vectorX).all():
             self.nonews = 0
         else:
             self.nonews += 1
         if self.nonews >= self.T:
             self.converged = True
+        for j in self.neighbors:
+            listMsgs.append((j, self.vectorX))
 
+        return listMsgs
 
-    def pontwiseMinimum(self, msgX):
+    # enviar o x para todos os viznhos
+
+    def pontwise(self,msgX):
+        # oldX <- vectorX
+        self.oldX = self.vectorX
+        # calculate and update vectorX with the pontwiseMinimum
         self.vectorX = np.minimum(self.vectorX, msgX)
-        self.N = calculatingN(self.vectorX)
-        #print(f' Estimation of Network Size (N) = {self.N}')
 
+    def estimating(self):
+        return calculatingN(self.vectorX)
 
 
 if __name__ == '__main__':
     # K, T, number of Nodes
-    bPropagation = BasicExtremePropagation(1000, 4, 10, 0.1)
+    bPropagation = BasicExtremePropagation(10, 4, 10, 0.1)
     bPropagation.initialize()
-    #bPropagation.run()
+    bPropagation.run_loop()
 
-    #print(f'{bPropagation.dist}')
-    sort_orders = sorted(bPropagation.dist.items(), key=lambda x: x[1], reverse=False)
+    '''result = sorted(bPropagation.queue, key=lambda x: x[2])
+        
+    print(result[0])
+    print(result[0][0][1])
+    print(result[0][2])'''
+    '''sort_orders = sorted(bPropagation.dist.items(), key=lambda x: x[1], reverse=False)
     for i in sort_orders:
         print(f'dict[({i[0][0]},{i[0][1]})] = {i[1]} ')
     #minimumTiming = min(bPropagation.dist, key=bPropagation.dist.get)
@@ -199,4 +276,4 @@ if __name__ == '__main__':
     print(sort_orders[0])
     plt.subplot(121)
     nx.draw(bPropagation.graph, with_labels=True)
-    plt.show()
+    plt.show()'''
