@@ -1,6 +1,8 @@
 from numpy import random
+import time
+import atexit
 import numpy as np
-from connected import randomGraph
+from ExtremaPropagationWithTermination.connected import randomGraph
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -46,7 +48,8 @@ class BasicExtremePropagation:
 
     def queueing(self):
         print("Calculating")
-        '''flag = True
+
+        flag = True
         i = 0
         N = 0
 
@@ -54,17 +57,18 @@ class BasicExtremePropagation:
             if self.nodes[i].converged:
                 N = self.nodes[i].estimating()
                 flag = False
-        print(f"Estimated value = {N}")'''
+        print(f"Estimated value = {N}")
+
 
     def timer(self):
+        self.s.start()
         self.s.add_job(
             func=self.queueing,
-            trigger=IntervalTrigger(seconds=1),
+            trigger=IntervalTrigger(seconds=10),
             id='printing_time_job',
-            name='Print time every 30 seconds',
+            name='Print time every 60 seconds',
             replace_existing=True
         )
-        self.s.start()
 
         # Shut down the scheduler when exiting the app
         atexit.register(lambda: self.s.shutdown())
@@ -108,10 +112,8 @@ class BasicExtremePropagation:
     def run_loop(self):
         self.timer()
         r = 0
-        while True:
-            pass
-            # print()
-        '''while len(self.queue) > 0:
+
+        while len(self.queue) > 0:
             # 1. Minimum distances Nodes ((src, dst), time)
             result = sorted(self.queue, key=lambda x: x[2])
             node = result[0][0]
@@ -170,7 +172,7 @@ class BasicExtremePropagation:
 
             for i in listMsgs:
                 self.queue.append((self.nodes[i[0]], i[1], self.dist[(senderNode, i[0])]))
-                print("")
+
 
             # Vizinhos recebem o resultado
             k = 0
@@ -190,10 +192,6 @@ class BasicExtremePropagation:
                 r = 0
             event = (self.nodes[r], self.nodes[r].vectorX, 0)
             self.queue.append(event)
-        '''
-
-
-
 
 
 
@@ -261,15 +259,11 @@ class Node:
 
 if __name__ == '__main__':
     # K, T, number of Nodes
-    bPropagation = BasicExtremePropagation(10, 4, 10, 0.1)
+    bPropagation = BasicExtremePropagation(1000, 4, 10, 0.1)
     bPropagation.initialize()
     bPropagation.run_loop()
 
-    '''result = sorted(bPropagation.queue, key=lambda x: x[2])
-        
-    print(result[0])
-    print(result[0][0][1])
-    print(result[0][2])'''
+
     '''sort_orders = sorted(bPropagation.dist.items(), key=lambda x: x[1], reverse=False)
     for i in sort_orders:
         print(f'dict[({i[0][0]},{i[0][1]})] = {i[1]} ')
