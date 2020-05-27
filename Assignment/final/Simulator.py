@@ -58,8 +58,8 @@ class Simulator:
             if self.nodes[i].converged:
                 N = self.nodes[i].estimating()
                 flag = False
+                print(f"Estimated value = {N}")
             i += 1
-        print(f"Estimated value = {N}")
 
     def timer(self):
         self.s.start()
@@ -106,6 +106,7 @@ class Simulator:
     
 
 if __name__ == '__main__':
+    # Node(K, T, neighbors, myNumber)
     simulator = Simulator(10, 4, 10, 0.2)
     simulator.initialize()
     simulator.run_loop()

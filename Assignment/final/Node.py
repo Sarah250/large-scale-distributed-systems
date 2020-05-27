@@ -78,6 +78,9 @@ class Node:
                 #
                 self.numberOfResponses += 1
                 #
+
+                print(f'Number of Response={self.numberOfResponses}\nNeighbors={self.neighbors}')
+
                 if self.numberOfResponses == len(self.neighbors):
                     self.numberOfResponses = 0
 
@@ -88,6 +91,8 @@ class Node:
                     if self.nonews >= self.T:
                         self.converged = True
                     pending = []
+
+                    print(f'T={self.T}\nNo News={self.nonews}')
 
                     for nei in self.neighbors:
                         self.expectedResponses.append((nei, self.myNumber))
