@@ -39,7 +39,7 @@ class Simulator:
 
             for j in self.nodes[i].neighbors:
                 #time = random.randint(1, 10)
-                time = random.random()
+                time = random.random()/10
                 self.dist[(i, j)] = time
                 localDist[(i, j)] = time
             self.nodes[i].setDist(localDist)
@@ -51,7 +51,7 @@ class Simulator:
             self.pending = self.pending + result
 
     def queueing(self):
-        print("Calculating")
+        print("SIMULATOR Calculating")
 
         flag = True
         i = 0
@@ -116,8 +116,9 @@ class Simulator:
             # print('----------------------------------------------')
             i += 1
             if i < self.numberOfNodes:
-                pending = self.nodes[i].handle(self.time+1)
-                self.pending = self.pending + pending
+                i = 0
+            pending = self.nodes[i].handle(self.time+1)
+            self.pending = self.pending + pending
         self.queueing()
 
 
