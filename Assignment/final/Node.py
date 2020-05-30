@@ -7,6 +7,13 @@ from Msg import Msg
 
 class Node:
     def __init__(self, K, T, neighbors, myNumber):
+        """
+        Initialize a Node with Parameters
+        :param K: size of vector X
+        :param T: number max of no news on consecutive rounds
+        :param neighbors: list of neighbor nodes
+        :param myNumber:
+        """
         self.T = T
         self.N = 0
         self.vectorX = random.exponential(scale=1, size=K)
@@ -43,6 +50,11 @@ class Node:
 
     # Round 1: enviar mensagens para os vizinhos
     def handle(self, clock):
+        """
+        Send messages to neighbors
+        :param clock:
+        :return: pending events
+        """
         # oldX <- vectorX
         self.oldX = self.vectorX
         pending = []
@@ -54,6 +66,7 @@ class Node:
             msg = Msg(self.vectorX)
             event = ((self.myNumber, nei[0][1]), msg, disTime + clock)
             pending.append(event)
+
         print(f'{self.myNumber} -> {self.expectedResponses}')
         return pending
 
@@ -113,6 +126,7 @@ class Node:
             else:
                 self.nonews += 1
             if self.nonews >= self.T:
+                print(f"{self.myNumber} converged")
                 self.converged = True
             pending = []
 
