@@ -47,38 +47,52 @@ class Simulator:
         self.backgroundSchedule.start()
         self.backgroundSchedule.add_job(
             func=self.query,
-            trigger=IntervalTrigger(seconds=30),
+            trigger=IntervalTrigger(seconds=2),
             id="Printing N estimation every 30 seconds",
             replace_existing=True
         )
         # Shut down the scheduler when exiting the app
         atexit.register(lambda: self.backgroundSchedule.shutdown())
 
+    def initializeNeighbors(self, edge):
+        parent = edge[0]
+        neighbor = edge[1]
+        self.nodes[parent].neighbors.append(self.nodes[neighbor])
+
+    #def initializeNeighbors(self, node):
+        #numOfNeighbors = len(node.neighbors)
+        #print(f'Number of Neighbors {numOfNeighbors}')
+        #neighbors = []
+
+        #if numOfNeighbors > 0:
+            #for neighbor in self.nodes[node.myNumber].neighbors:
+                #if neighbor != node.myNumber:
+                    #         K,     T,     parent, neighbors,          myNumber,   faults
+                    #n = Node(self.K, self.T, node, Node(self.K, self.T, self.nodes[node.myNumber], list(self.graph.nodes[neighbor]), neighbor, self.percentage), neighbor, self.percentage)
+                    #teste = list(self.graph.nodes[neighbor])
+                    #print(teste)
+                    #n.neighbors = self.initializeNeighbors(n)
+
+                    # neighbors.append(n)
+                    #index = self.nodes[node.myNumber].neighbors.index(neighbor)
+                    #self.nodes[node.myNumber].neighbors[index] = n.neighbors
+        #else:
+            #return
+
     def initialize(self):
         # Instanciar todos os nós da rede
         for node in self.nodes:
             # (delay, Node)
             # node = (0, Node(self.K, self.T, 0, node, self.percentage))
-            self.nodes[node] = Node(self.K, self.T, None, list(self.graph.neighbors(node)), node, self.percentage)
+            self.nodes[node] = Node(self.K, self.T, None, [], node, self.percentage)
 
         # Para cada nó da rede
-        for node in self.nodes:
-            neighbors = []
-            #Instanciar o vizinho de index neighbor
-            for neighbor in self.nodes[node.myNumber].neighbors:
-                if neighbor != node.myNumber:
-                    # K, T, parent, neighbors, myNumber, faults
-                    n = Node(self.K, self.T, node, self.nodes[neighbor], neighbor, self.percentage)
-                    neighbors.append(n)
-                    #index = self.nodes[node.myNumber].neighbors.index(neighbor)
-                    #self.nodes[node.myNumber].neighbors[index] = n
-            node.neighbors.clear()
-            node.neighbors = neighbors
-            print("added")
+        for edge in self.graph.edges:
+            #Instanciar o vizinho de cada node
+            self.initializeNeighbors(edge)
 
-                #= neighbors
-                # else:
-                    # self.nodes[node.myNumber].neighbors.pop
+        print("teste")
+
     def start(self):
         # schedule first event
         for i in self.nodes:
@@ -90,16 +104,26 @@ class Simulator:
 
     def run_loop(self):
         self.timer()
+        round = 0
         while len(self.pending) > 0:
             self.pending = sorted(self.pending, key=lambda x: x[0])
             node = self.pending[0][1][1]
             #self.pending
 
-            node.handle()
+            print(node.handle())
+
+            round += 1
+            print(round)
+            if node.converged:
+                self.pending.pop(0)
 
             self.time += self.pending[0][0]
 
-            self.pending.pop(0)
+            print(f"Self Pending : {len(self.pending)}")
+            print("")
+            # self.pending.pop(0)
+
+        self.start()
 
     '''
     Queries the initial Node for estimator value

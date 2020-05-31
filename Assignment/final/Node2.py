@@ -4,6 +4,7 @@ import queue
 
 from Msg import Msg
 
+
 class Node:
     """
     Initialize a Node with Parameters
@@ -14,6 +15,7 @@ class Node:
     :param myNumber: Node id
     :param faults: percentage max of faults
     """
+
     def __init__(self, K, T, parent, neighbors, myNumber, faults):
         self.T = T
         self.N = 0
@@ -27,65 +29,57 @@ class Node:
         self.faults = faults
         self.distance = []
         #
-        # Destination Node, responded
-        self.sentMessages = []
+        # Destination Node, response
+        self.responses = []
+        # Source Node, VectorX
         self.receivedMessages = []
-
 
     # Node Envia para os Vizinhos
     def handle(self):
-        for i in self.neighbors:
-            print(f'{self.myNumber} -> {i.myNumber}')
-            i.receive(self.myNumber, self.vectorX)
-            # Adicionar a Mensagens enviadas o numero do vizinho e um boolean
-            # i.receive(self.parent, self.vectorX)
-            # self.sentMessages.append((i, False)) # false indica que não recebeu resposta ainda
-            # enviar o self.X para cada vizinho
+        # Enquanto tiver vizinhos vizinhos
+        if len(self.neighbors) > 0:
+            # Enviar o meu vector
+            for i in self.neighbors:
+                print(f"Sending from {self.myNumber} -> {i.myNumber}")
+                # TODO: Implementar um timout para perda de mensagens
 
-    def handleNeighbors(self):
-        for i in self.neighbors.neighbors:
-            print(f'{self.myNumber} -> {i.myNumber}')
-            i.receive(self.myNumber, self.vectorX)
+                receivedMessage = i.send(self.myNumber, self.vectorX)
 
+                self.receivedMessages.append(receivedMessage)
+
+                print(self.receivedMessages)
+                # print(self.receivedMessages)
+        else:
+            if len(self.receivedMessages) == len(self.neighbors):
+                # Não Existem mais vizinhos, lógica do algoritmo
+                return self.handleMessage()
 
     '''
-    Receives a message from neighbor
+    Receives a message from parent neighbor
     :param src: Sender Node
     :param msg: Received Vector X
     :return:
     '''
-    def receive(self, src, msg):
+    def send(self, src, msg):
+        # Recebi uma mensagem do pai vizinho, o que fazer?
 
+        # Adicionar à lista de mensagens
         self.receivedMessages.append((src, msg))
 
-        # print(f'{len(self.neighbors)}')
-        # Se não não houver mais vizinhos a quem enviar o vector X...
-        if len(self.neighbors) > 0:
-            self.handleNeighbors()
-            # Lógica do algoritmo
-            #return self.handleMessage()
-        else:
-            return self.handleMessage()
-            # Continuar a enviar para os vizinhos
-            #self.handle()
+        # Enviar para os meus vizinhos
+        # retornar quando já não há mais vizinhos desse vizinho
+        return self.handle()
 
+        #self.receivedMessages.append((src, msg))
 
-        #for i in self.sentMessages:
-            #if i[0] == src:
-                #i[1] = True
-                #self.totalReceived = self.totalReceived + 1
-                #receivedMessages.append(msg)
+        #if len(self.neighbors) == 0:
+            # Se não houver vizinhos a enviar mensagens, retorna as respostas
+#            msg = (self.myNumber, self.handleMessage())
 
-        # Calcular quantas faltas posso ter
-        #maxLost = round(self.faultPercentage * len(self.neighbors))
-
-        # adicionar um timer
-        #if len(self.receivedMessages) >= (len(self.neighbors) - maxLost):
-            #self.handleMessage(receivedMessages)
-
-
-        # Ver das faltas
-        # handleMessage()
+ #           return msg
+  #      else:
+   #         for neighbor in self.neighbors:
+    #            neighbor.handle()
 
     '''
     Handle vector received
@@ -97,23 +91,24 @@ class Node:
         self.oldX = self.vectorX
 
         # Calcular o Pointwise minimum
-        for i in msgList:
-            self.vectorX = np.minimum(self.vectorX, i)
+        for i in self.receivedMessages:
+            self.vectorX = np.minimum(self.vectorX, i[1])
 
         if (self.oldX != self.vectorX).all():
             self.nonews = 0
         else:
+            print(f"No news {self.nonews}")
             self.nonews += 1
 
         if self.nonews >= self.T:
             self.converged = True
 
-        return self.vectorX
+        # return self.vectorX
         # após receber todas as mensagens, enviar o resultado do X a todos os vizinhos
 
     def query(self):
         if self.converged:
-            return estimator()
+            return self.estimator()
         else:
             # Ainda não acabei !!!
             return None
